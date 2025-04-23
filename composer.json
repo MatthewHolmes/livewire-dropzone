@@ -1,5 +1,5 @@
 {
-    "name": "dasundev/livewire-dropzone",
+    "name": "matthewholmes/livewire-dropzone",
     "description": "A Livewire Dropzone component for simple drag-and-drop file uploads.",
     "keywords": [
         "livewire",
