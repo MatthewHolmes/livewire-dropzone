@@ -32,6 +32,14 @@ class Dropzone extends Component
 
     public bool $multiple;
 
+    // Define custom messages for validation errors
+    public $messages = [
+        'upload.*.mimes' => 'File type not allowed.', // Custom message for disallowed file types
+        'upload.mimes' => 'File type not allowed.', // Custom message for single file disallowed type
+        'upload.*.required' => 'Please upload at least one file.',
+        'upload.required' => 'Please upload a file.',
+    ];
+
     public function rules(): array
     {
         $field = $this->multiple ? 'upload.*' : 'upload';
@@ -41,12 +49,12 @@ class Dropzone extends Component
         ];
     }
 
-    public function mount(array $rules = [], bool $multiple = false, array $files = []): void
+    public function mount(array $rules = [], bool $multiple = false): void
     {
         $this->uuid = Str::uuid();
         $this->multiple = $multiple;
         $this->rules = $rules;
-        $this->files = $files;
+        $this->files = [];
     }
 
     public function updatedUpload(): void
@@ -54,7 +62,7 @@ class Dropzone extends Component
         $this->reset('error');
 
         try {
-            $this->validate();
+            $this->validate(null, $this->messages);
         } catch (ValidationException $e) {
             // If the upload validation fails, we trigger the following event
             $this->dispatch("{$this->uuid}:uploadError", $e->getMessage());
@@ -85,6 +93,7 @@ class Dropzone extends Component
             'path' => $file->path(),
             'temporaryUrl' => $file->isPreviewable() ? $file->temporaryUrl() : null,
             'size' => $file->getSize(),
+            'description' => '',
         ]);
     }
 
