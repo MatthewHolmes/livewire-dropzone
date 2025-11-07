@@ -4,14 +4,19 @@
         _this: @this,
         uuid: @js($uuid),
         multiple: @js($multiple),
+        maxSizeMB: 10
     })"
     @dragenter.prevent.document="onDragenter($event)"
     @dragleave.prevent="onDragleave($event)"
     @dragover.prevent="onDragover($event)"
     @drop.prevent="onDrop"
+    @window.{{ $uuid }}:fileAdded.window="onFileAdded($event.detail)"
     class="dz-w-full dz-antialiased"
 >
+    {{-- Outer container --}}
     <div class="dz-flex dz-flex-col dz-items-start dz-h-full dz-w-full dz-max-w-2xl dz-justify-center dz-bg-white dark:dz-bg-gray-800 dark:dz-border-gray-600 dark:hover:dz-border-gray-500">
+
+        {{-- Error section --}}
         @if(! is_null($error))
             <div class="dz-bg-red-50 dz-p-4 dz-w-full dz-mb-4 dz-rounded dark:dz-bg-red-600">
                 <div class="dz-flex dz-gap-3 dz-items-start">
@@ -22,16 +27,23 @@
                 </div>
             </div>
         @endif
+
+        {{-- Dropzone area --}}
         <div @click="$refs.input.click()" class="dz-border dz-border-dashed dz-rounded dz-border-gray-500 dz-w-full dz-cursor-pointer">
             <div>
-                <div x-show="!isDragging" class="dz-flex dz-items-center dz-bg-gray-50 dz-justify-center dz-gap-2 dz-py-8 dz-h-full dark:dz-bg-gray-700">
+                {{-- Normal state --}}
+                <div x-show="!isDragging" class="dz-flex dz-items-center dz-bg-gray-50 dz-justify-center dz-gap-2 dz-py-8 dz-min-h-[120px] dz-h-full dark:dz-bg-gray-700 dz-rounded">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="dz-w-6 dz-h-6 dz-text-gray-500 dark:dz-text-gray-400">
                         <path d="M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z" />
                         <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
                     </svg>
-                    <p class="dz-text-md dz-text-gray-600 dark:dz-text-gray-400">Drop here or <span class="dz-font-semibold dz-text-black dark:dz-text-white">Browse files</span></p>
+                    <p class="dz-text-md dz-text-gray-600 dark:dz-text-gray-400">
+                        Drop here or <span class="dz-font-semibold dz-text-black dark:dz-text-white">Browse files</span>
+                    </p>
                 </div>
-                <div x-show="isDragging" class="dz-flex dz-items-center dz-bg-gray-100 dz-justify-center dz-gap-2 dz-py-8 dz-h-full">
+
+                {{-- Dragging state --}}
+                <div x-show="isDragging" class="dz-flex dz-items-center dz-bg-gray-100 dz-justify-center dz-gap-2 dz-py-8 dz-h-full dz-min-h-[120px] dz-rounded">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="dz-w-6 dz-h-6 dz-text-gray-500 dark:dz-text-gray-400">
                         <path d="M10 2a.75.75 0 01.75.75v5.59l1.95-2.1a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0L6.2 7.26a.75.75 0 111.1-1.02l1.95 2.1V2.75A.75.75 0 0110 2z" />
                         <path d="M5.273 4.5a1.25 1.25 0 00-1.205.918l-1.523 5.52c-.006.02-.01.041-.015.062H6a1 1 0 01.894.553l.448.894a1 1 0 00.894.553h3.438a1 1 0 00.86-.49l.606-1.02A1 1 0 0114 11h3.47a1.318 1.318 0 00-.015-.062l-1.523-5.52a1.25 1.25 0 00-1.205-.918h-.977a.75.75 0 010-1.5h.977a2.75 2.75 0 012.651 2.019l1.523 5.52c.066.239.099.485.099.732V15a2 2 0 01-2 2H3a2 2 0 01-2-2v-3.73c0-.246.033-.492.099-.73l1.523-5.521A2.75 2.75 0 015.273 3h.977a.75.75 0 010 1.5h-.977z" />
@@ -39,68 +51,59 @@
                     <p class="dz-text-md dz-text-gray-600 dark:dz-text-gray-400">Drop here to upload</p>
                 </div>
             </div>
+
+            {{-- Hidden file input --}}
             <input
-                    x-ref="input"
-                    wire:model="upload"
-                    type="file"
-                    class="dz-hidden"
-                    x-on:livewire-upload-start="isLoading = true"
-                    x-on:livewire-upload-finish="isLoading = false"
-                    x-on:livewire-upload-error="console.log('livewire-dropzone upload error', error)"
-                    @if(! is_null($this->accept)) accept="{{ $this->accept }}" @endif
-                    @if($multiple === true) multiple @endif
+                x-ref="input"
+                wire:model="upload"
+                type="file"
+                class="dz-hidden"
+                x-on:livewire-upload-start="isLoading = true"
+                x-on:livewire-upload-finish="isLoading = false"
+                x-on:livewire-upload-error="console.error('upload error', $event)"
+                @change="validateFiles($event)"
+                @if(! is_null($this->accept)) accept="{{ $this->accept }}" @endif
+                @if($multiple === true) multiple @endif
             >
         </div>
 
+        {{-- Info bar and loader --}}
         <div class="dz-flex dz-justify-between dz-w-full dz-mt-2">
             <div class="dz-flex dz-items-center dz-gap-2 dz-text-gray-500 dz-text-sm">
-                @php
-                    $hasMaxFileSize = ! is_null($this->maxFileSize);
-                    $hasMimes = ! empty($this->mimes);
-                @endphp
-
-                @if($hasMaxFileSize)
-                    <p>{{ __('Up to :size', ['size' => \Illuminate\Support\Number::fileSize($this->maxFileSize * 1024)]) }}</p>
-                @endif
-
-                @if($hasMaxFileSize && $hasMimes)
-                    <span class="w-1 h-1 text-gray-400">·</span>
-                @endif
-
-                @if($hasMimes)
-                    <p>{{ Str::upper($this->mimes) }}</p>
-                @endif
+                <p>Up to 10&nbsp;MB</p>
+                <span class="dz-w-1 dz-h-1 dz-bg-gray-400 dz-rounded-full"></span>
+                <p>PNG, JPEG, PDF, MP4</p>
             </div>
             <div x-show="isLoading" role="status">
                 <svg aria-hidden="true" class="dz-w-5 dz-h-5 dz-text-gray-200 dz-animate-spin dark:dz-text-gray-700 dz-fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                    <path d="M100 50.59C100 78.21 77.61 100.59 50 100.59C22.39 100.59 0 78.21 0 50.59C0 22.98 22.39 0.59 50 0.59C77.61 0.59 100 22.98 100 50.59Z" fill="currentColor"/>
+                    <path d="M93.97 39.04C96.39 38.4 97.86 35.91 97.01 33.55C95.29 28.82 92.87 24.37 89.82 20.35C85.85 15.12 80.88 10.72 75.21 7.41C69.54 4.1 63.28 1.94 56.77 1.05C51.77 0.37 46.7 0.45 41.73 1.28C39.26 1.69 37.81 4.2 38.45 6.62C39.09 9.05 41.57 10.47 44.05 10.11C47.85 9.55 51.72 9.53 55.54 10.05C60.86 10.78 65.99 12.55 70.63 15.26C75.27 17.96 79.33 21.56 82.58 25.84Z" fill="currentFill"/>
                 </svg>
-                <span class="dz-sr-only">Loading...</span>
             </div>
         </div>
 
+        {{-- Uploaded file list --}}
         @if(isset($files) && count($files) > 0)
         <div class="dz-flex dz-flex-wrap dz-gap-x-10 dz-gap-y-2 dz-justify-start dz-w-full dz-mt-5">
             @foreach($files as $key => $file)
                 @if(is_array($file))
-                <div class="dz-flex dz-items-center dz-justify-between dz-gap-2 dz-border dz-rounded dz-border-gray-200 dz-w-full dz-h-auto dz-overflow-hidden dark:dz-border-gray-700">
+                <div class="dz-flex dz-items-center dz-justify-between dz-gap-2 dz-border dz-rounded dz-border-gray-200 dz-w-full dark:dz-border-gray-700 dz-overflow-hidden">
                     <div class="dz-flex dz-items-center dz-gap-3">
                         @if($this->isImageMime($file['extension']))
                             <div class="dz-flex-none w-24 h-24">
-                                <img src="{{ $file['temporaryUrl'] }}" class="dz-object-fill dz-w-full dz-h-full" alt="{{ $file['name'] }}">
+                                <img src="{{ $file['temporaryUrl'] }}" class="dz-object-cover dz-w-full dz-h-full" alt="{{ $file['name'] }}">
                             </div>
                         @else
-                            <div class="dz-flex dz-justify-center dz-items-center w-24 h-24 dz-bg-gray-100 dark:dz-bg-gray-700">
+                            <div class="dz-flex dz-justify-center dz-items-center dz-w-24 dz-h-24 dz-bg-gray-100 dark:dz-bg-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="dz-w-8 dz-h-8 dz-text-gray-500">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625v17.25h12.75V11.25a9 9 0 0 0-9-9Z" />
                                 </svg>
                             </div>
                         @endif
-                        <div class="dz-flex dz-flex-col dz-items-start dz-gap-1 py-2">
-                            <div class="dz-text-center dz-text-slate-900 dz-text-sm dz-font-medium dark:dz-text-slate-100">{{ $file['name'] }}</div>
-                            <div class="dz-text-center dz-text-gray-500 dz-text-sm dz-font-medium">{{ \Illuminate\Support\Number::fileSize($file['size']) }}</div>
-                            <input class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-sm px-3 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 " 
+                        <div class="dz-flex dz-flex-col dz-items-start dz-gap-1 dz-py-2">
+                            <div class="dz-text-slate-900 dz-text-sm dz-font-medium dark:dz-text-slate-100">{{ $file['name'] }}</div>
+                            <div class="dz-text-gray-500 dz-text-sm dz-font-medium">{{ \Illuminate\Support\Number::fileSize($file['size']) }}</div>
+                            <input class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-md border border-slate-200 rounded-sm px-3 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 " 
                                 placeholder="File description"
                                 wire:model="files.{{ $key }}.description"
                                 >
@@ -120,49 +123,97 @@
         @endif
     </div>
 
+    {{-- Alpine logic --}}
     @script
     <script>
-        Alpine.data('dropzone', ({ _this, uuid, multiple }) => {
-            return ({
-                isDragging: false,
-                isDropped: false,
-                isLoading: false,
+        // Global persistent counter (shared across all dropzones)
+        window.totalFileSize = window.totalFileSize || 0;
 
-                onDrop(e) {
-                    this.isDropped = true
-                    this.isDragging = false
+        Alpine.data('dropzone', ({ _this, uuid, multiple, maxSizeMB }) => ({
+            isDragging: false,
+            isLoading: false,
 
-                    const file = multiple ? e.dataTransfer.files : e.dataTransfer.files[0]
+            validateFiles(e) {
+                const files = e.target.files;
+                if (!this.checkFileSizes(files)) return;
+                this.uploadFiles(files);
+            },
 
-                    const args = ['upload', file, () => {
-                        // Upload completed
-                        this.isLoading = false
-                    }, (error) => {
-                        // An error occurred while uploading
-                        console.log('livewire-dropzone upload error', error);
-                    }, () => {
-                        // Uploading is in progress
-                        this.isLoading = true
-                    }];
+            onDrop(e) {
+                this.isDragging = false;
+                const files = multiple ? e.dataTransfer.files : [e.dataTransfer.files[0]];
+                if (!this.checkFileSizes(files)) return;
+                this.uploadFiles(files);
+            },
 
-                    // Upload file(s)
-                    multiple ? _this.uploadMultiple(...args) : _this.upload(...args)
-                },
-                onDragenter() {
-                    this.isDragging = true
-                },
-                onDragleave() {
-                    this.isDragging = false
-                },
-                onDragover() {
-                    this.isDragging = true
-                },
-                removeUpload(tmpFilename) {
-                    // Dispatch an event to remove the temporarily uploaded file
-                    _this.dispatch(uuid + ':fileRemoved', { tmpFilename })
-                },
-            });
-        })
+            uploadFiles(files) {
+                const args = [
+                    'upload',
+                    files,
+                    () => this.isLoading = false,
+                    (err) => console.error('upload error', err),
+                    () => this.isLoading = true
+                ];
+                multiple ? _this.uploadMultiple(...args) : _this.upload(...args);
+            },
+
+            checkFileSizes(files) {
+                let batchSize = 0;
+
+                // Check each file individually
+                for (const file of files) {
+                    if (file.size > maxSizeMB * 1024 * 1024) {
+                        alert(`"${file.name}" exceeds the ${maxSizeMB} MB limit.`);
+                        return false;
+                    }
+                    batchSize += file.size;
+                }
+
+                // Check total size across uploads
+                const totalLimit = maxSizeMB * 1024 * 1024;
+                const newTotal = window.totalFileSize + batchSize;
+
+                if (newTotal > totalLimit) {
+                    const totalMB = (newTotal / (1024 * 1024)).toFixed(2);
+                    alert(`Your total upload size (${totalMB} MB) exceeds the ${maxSizeMB} MB limit. Try uploading the files separately.`);
+                    return false;
+                }
+
+                window.totalFileSize = newTotal;
+
+                return true;
+            },
+
+            onFileAdded(file) {
+                if (file && file.size) {
+                    window.totalFileSize += file.size;
+                }
+                console.log('File added:', file, 'Total so far:', window.totalFileSize);
+            },
+
+            removeUpload(tmpFilename) {
+                const files = _this.get('files') || [];
+                const removed = files.find(f => f.tmpFilename === tmpFilename);
+
+                if (removed?.size) {
+                    window.totalFileSize = Math.max(0, window.totalFileSize - removed.size);
+                }
+
+                const remaining = files.filter(f => f.tmpFilename !== tmpFilename);
+                if (remaining.length === 0) {
+                    window.totalFileSize = 0;
+                }
+
+                console.log('Removed file:', tmpFilename, 'Total now:', window.totalFileSize);
+
+                _this.dispatch(uuid + ':fileRemoved', { tmpFilename });
+            },
+
+            onDragenter() { this.isDragging = true },
+            onDragleave() { this.isDragging = false },
+            onDragover() { this.isDragging = true },
+        }));
     </script>
     @endscript
+
 </div>
