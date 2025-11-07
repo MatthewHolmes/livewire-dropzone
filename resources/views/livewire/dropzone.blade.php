@@ -176,6 +176,10 @@
                 if (newTotal > totalLimit) {
                     const totalMB = (newTotal / (1024 * 1024)).toFixed(2);
                     alert(`Your total upload size (${totalMB} MB) exceeds the ${maxSizeMB} MB limit. Try uploading the files separately.`);
+                    this.isLoading = false;
+
+                    files = [];
+
                     return false;
                 }
 
