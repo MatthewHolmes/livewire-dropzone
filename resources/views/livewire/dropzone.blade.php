@@ -55,7 +55,6 @@
             {{-- Hidden file input --}}
             <input
                 x-ref="input"
-                wire:model="upload"
                 type="file"
                 class="dz-hidden"
                 x-on:livewire-upload-start="isLoading = true"
