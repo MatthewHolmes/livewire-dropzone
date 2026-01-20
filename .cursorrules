@@ -1,0 +1,46 @@
+# Cursor Rules for livewire-dropzone
+
+## Project Context
+This is a Laravel package providing a Livewire 3 component for drag-and-drop file uploads with Alpine.js integration.
+
+## Key Files
+- `src/Http/Livewire/Dropzone.php` - Main Livewire component
+- `resources/views/livewire/dropzone.blade.php` - View with Alpine.js logic
+- `tests/Feature/DropzoneTest.php` - Pest test suite
+
+## Code Style
+- Follow Laravel/PSR-12 conventions
+- Use Laravel Pint for formatting: `composer lint`
+- Run PHPStan level 5: `composer analyse`
+- All Tailwind classes in the view use `dz-` prefix
+
+## Architecture Patterns
+- Event-driven: Alpine ↔ Livewire communication via UUID-scoped events
+- Pattern: `{uuid}:eventName` (e.g., `{uuid}:fileAdded`)
+- Use `#[Locked]` for properties that shouldn't be client-modifiable
+- Use `#[Modelable]` for two-way binding with parent components
+- Use `#[On]` attributes for event listeners
+- Use `#[Computed]` for derived properties
+
+## Testing
+- Use Pest PHP with `Livewire::test()`
+- Test file: `tests/Feature/DropzoneTest.php`
+- Run tests: `composer test`
+- Use `UploadedFile::fake()` for file upload simulation
+
+## Important Constraints
+- 10MB file limit is hardcoded in blade at line 7
+- `window.totalFileSize` is a global variable tracking all dropzones
+- Namespace is `Dasundev\LivewireDropzone` (original author, kept for compatibility)
+- Files array structure: `tmpFilename`, `name`, `extension`, `path`, `temporaryUrl`, `size`, `description`
+
+## Development Server
+```bash
+composer serve  # Starts workbench dev server
+```
+
+## When Making Changes
+1. Read existing code before modifying
+2. Add tests for new functionality
+3. Run `composer test && composer analyse` before committing
+4. Update CLAUDE.md if architecture changes

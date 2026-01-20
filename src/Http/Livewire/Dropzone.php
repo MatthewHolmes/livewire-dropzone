@@ -17,6 +17,19 @@ class Dropzone extends Component
 {
     use WithFileUploads;
 
+    /**
+     * Default structure for file arrays to prevent undefined key errors.
+     */
+    protected const FILE_DEFAULTS = [
+        'tmpFilename' => '',
+        'name' => 'Unknown',
+        'extension' => '',
+        'path' => '',
+        'temporaryUrl' => null,
+        'size' => 0,
+        'description' => '',
+    ];
+
     #[Modelable]
     public ?array $files;
 
@@ -54,7 +67,7 @@ class Dropzone extends Component
         $this->uuid = Str::uuid();
         $this->multiple = $multiple;
         $this->rules = $rules;
-        $this->files = [];
+        $this->files = $this->files ?? [];
     }
 
     public function updatedUpload(): void
@@ -112,13 +125,17 @@ class Dropzone extends Component
     #[On('{uuid}:fileRemoved')]
     public function onFileRemoved(string $tmpFilename): void
     {
-        $this->files = array_filter($this->files, function ($file) use ($tmpFilename) {
+        $this->files = array_values(array_filter($this->files, function ($file) use ($tmpFilename) {
+            // Skip invalid entries (not arrays or missing tmpFilename)
+            if (! is_array($file) || ! isset($file['tmpFilename'])) {
+                return false;
+            }
             // Remove the temporary file from the array only.
             // No need to remove from the Livewire's temporary upload directory manually.
             // Because, files older than 24 hours cleanup automatically by Livewire.
             // For more details, refer to: https://livewire.laravel.com/docs/uploads#configuring-automatic-file-cleanup
             return $file['tmpFilename'] !== $tmpFilename;
-        });
+        }));
     }
 
     /**
@@ -165,6 +182,25 @@ class Dropzone extends Component
             ->unique()
             ->values()
             ->first();
+    }
+
+    /**
+     * Get normalized files with default values to prevent undefined key errors.
+     */
+    #[Computed]
+    public function normalizedFiles(): array
+    {
+        if (empty($this->files)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(function ($file) {
+            if (! is_array($file)) {
+                return null;
+            }
+
+            return array_merge(self::FILE_DEFAULTS, $file);
+        }, $this->files)));
     }
 
     /**

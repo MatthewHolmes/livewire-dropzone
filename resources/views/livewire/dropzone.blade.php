@@ -82,15 +82,22 @@
         </div>
 
         {{-- Uploaded file list --}}
-        @if(isset($files) && count($files) > 0)
+        @if(count($this->normalizedFiles) > 0)
         <div class="dz-flex dz-flex-wrap dz-gap-x-10 dz-gap-y-2 dz-justify-start dz-w-full dz-mt-5">
-            @foreach($files as $key => $file)
-                @if(is_array($file))
+            @foreach($this->normalizedFiles as $key => $file)
                 <div class="dz-flex dz-items-center dz-justify-between dz-gap-2 dz-border dz-rounded dz-border-gray-200 dz-w-full dark:dz-border-gray-700 dz-overflow-hidden">
                     <div class="dz-flex dz-items-center dz-gap-3">
-                        @if($this->isImageMime($file['extension']))
+                        @if($this->isImageMime($file['extension'] ?? ''))
                             <div class="dz-flex-none w-24 h-24">
-                                <img src="{{ $file['temporaryUrl'] }}" class="dz-object-cover dz-w-full dz-h-full" alt="{{ $file['name'] }}">
+                                @if(!empty($file['temporaryUrl']))
+                                    <img src="{{ $file['temporaryUrl'] }}" class="dz-object-cover dz-w-full dz-h-full" alt="{{ $file['name'] ?? 'Unknown file' }}">
+                                @else
+                                    <div class="dz-flex dz-justify-center dz-items-center dz-w-24 dz-h-24 dz-bg-gray-100 dark:dz-bg-gray-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="dz-w-8 dz-h-8 dz-text-gray-500">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                        </svg>
+                                    </div>
+                                @endif
                             </div>
                         @else
                             <div class="dz-flex dz-justify-center dz-items-center dz-w-24 dz-h-24 dz-bg-gray-100 dark:dz-bg-gray-700">
@@ -100,14 +107,15 @@
                             </div>
                         @endif
                         <div class="dz-flex dz-flex-col dz-items-start dz-gap-1 dz-py-2">
-                            <div class="dz-text-slate-900 dz-text-sm dz-font-medium dark:dz-text-slate-100">{{ $file['name'] }}</div>
-                            <div class="dz-text-gray-500 dz-text-sm dz-font-medium">{{ \Illuminate\Support\Number::fileSize($file['size']) }}</div>
-                            <input class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-md border border-slate-200 rounded-sm px-3 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 " 
+                            <div class="dz-text-slate-900 dz-text-sm dz-font-medium dark:dz-text-slate-100">{{ $file['name'] ?? 'Unknown file' }}</div>
+                            <div class="dz-text-gray-500 dz-text-sm dz-font-medium">{{ \Illuminate\Support\Number::fileSize($file['size'] ?? 0) }}</div>
+                            <input class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-md border border-slate-200 rounded-sm px-3 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 "
                                 placeholder="File description"
                                 wire:model="files.{{ $key }}.description"
                                 >
                         </div>
                     </div>
+                    @if(!empty($file['tmpFilename']))
                     <div class="dz-flex dz-items-center dz-mr-3">
                         <button type="button" @click="removeUpload('{{ $file['tmpFilename'] }}')">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="dz-w-6 dz-h-6 dz-text-black dark:dz-text-white">
@@ -115,8 +123,8 @@
                             </svg>
                         </button>
                     </div>
+                    @endif
                 </div>
-                @endif
             @endforeach
         </div>
         @endif
@@ -196,13 +204,13 @@
 
             removeUpload(tmpFilename) {
                 const files = _this.get('files') || [];
-                const removed = files.find(f => f.tmpFilename === tmpFilename);
+                const removed = files.find(f => f && f.tmpFilename === tmpFilename);
 
-                if (removed?.size) {
+                if (removed && removed.size) {
                     window.totalFileSize = Math.max(0, window.totalFileSize - removed.size);
                 }
 
-                const remaining = files.filter(f => f.tmpFilename !== tmpFilename);
+                const remaining = files.filter(f => f && f.tmpFilename !== tmpFilename);
                 if (remaining.length === 0) {
                     window.totalFileSize = 0;
                 }
