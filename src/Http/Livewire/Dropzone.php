@@ -116,6 +116,7 @@ class Dropzone extends Component
     #[On('{uuid}:fileAdded')]
     public function onFileAdded(array $file): void
     {
+        $file = array_merge(self::FILE_DEFAULTS, $file);
         $this->files = $this->multiple ? array_merge($this->files, [$file]) : [$file];
     }
 
@@ -194,13 +195,13 @@ class Dropzone extends Component
             return [];
         }
 
-        return array_values(array_filter(array_map(function ($file) {
+        return array_filter(array_map(function ($file) {
             if (! is_array($file)) {
                 return null;
             }
 
             return array_merge(self::FILE_DEFAULTS, $file);
-        }, $this->files)));
+        }, $this->files));
     }
 
     /**
