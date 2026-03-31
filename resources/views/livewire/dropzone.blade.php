@@ -156,7 +156,7 @@
             uploadFiles(files) {
                 const args = [
                     'upload',
-                    files,
+                    multiple ? files : files[0],
                     () => this.isLoading = false,
                     (err) => console.error('upload error', err),
                     () => this.isLoading = true
