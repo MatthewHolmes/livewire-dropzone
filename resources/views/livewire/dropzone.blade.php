@@ -57,8 +57,6 @@
                 x-ref="input"
                 type="file"
                 class="dz-hidden"
-                x-on:livewire-upload-start="isLoading = true"
-                x-on:livewire-upload-finish="isLoading = false"
                 x-on:livewire-upload-error="console.error('upload error', $event)"
                 @change="validateFiles($event)"
                 @if(! is_null($this->accept)) accept="{{ $this->accept }}" @endif
@@ -154,12 +152,13 @@
             },
 
             uploadFiles(files) {
+                const el = this.$el;
                 const args = [
                     'upload',
                     multiple ? files : files[0],
-                    () => this.isLoading = false,
-                    (err) => console.error('upload error', err),
-                    () => this.isLoading = true
+                    () => { this.isLoading = false; el.dispatchEvent(new CustomEvent('dropzone-upload-finish', { bubbles: true })); },
+                    (err) => { console.error('upload error', err); el.dispatchEvent(new CustomEvent('dropzone-upload-finish', { bubbles: true })); },
+                    () => { this.isLoading = true; el.dispatchEvent(new CustomEvent('dropzone-upload-start', { bubbles: true })); }
                 ];
                 multiple ? _this.uploadMultiple(...args) : _this.upload(...args);
             },
@@ -199,7 +198,7 @@
                 if (file && file.size) {
                     window.totalFileSize += file.size;
                 }
-                console.log('File added:', file, 'Total so far:', window.totalFileSize);
+                // console.log('File added:', file, 'Total so far:', window.totalFileSize);
             },
 
             removeUpload(tmpFilename) {
@@ -215,7 +214,7 @@
                     window.totalFileSize = 0;
                 }
 
-                console.log('Removed file:', tmpFilename, 'Total now:', window.totalFileSize);
+                // console.log('Removed file:', tmpFilename, 'Total now:', window.totalFileSize);
 
                 _this.dispatch(uuid + ':fileRemoved', { tmpFilename });
             },
