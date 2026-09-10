@@ -190,9 +190,7 @@
                     return false;
                 }
 
-                // Note: the accumulated total is maintained by onFileAdded() /
-                // removeUpload() so that only files that actually upload are counted.
-                // Adding batchSize here as well would double-count every file.
+                window.totalFileSize = newTotal;
 
                 return true;
             },
