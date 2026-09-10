@@ -11,6 +11,7 @@
     @dragover.prevent="onDragover($event)"
     @drop.prevent="onDrop"
     @window.{{ $uuid }}:fileAdded.window="onFileAdded($event.detail)"
+    x-on:dropzone-reset.window="resetTotal()"
     class="dz-w-full dz-antialiased"
 >
     {{-- Outer container --}}
@@ -189,7 +190,9 @@
                     return false;
                 }
 
-                window.totalFileSize = newTotal;
+                // Note: the accumulated total is maintained by onFileAdded() /
+                // removeUpload() so that only files that actually upload are counted.
+                // Adding batchSize here as well would double-count every file.
 
                 return true;
             },
@@ -199,6 +202,10 @@
                     window.totalFileSize += file.size;
                 }
                 // console.log('File added:', file, 'Total so far:', window.totalFileSize);
+            },
+
+            resetTotal() {
+                window.totalFileSize = 0;
             },
 
             removeUpload(tmpFilename) {
